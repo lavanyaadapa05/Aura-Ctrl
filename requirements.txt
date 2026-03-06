@@ -1,0 +1,14 @@
+opencv-python
+mediapipe
+numpy
+pyautogui
+pywin32
+pycaw
+comtypes
+screen-brightness-control
+PyQt6
+speechrecognition
+pyttsx3
+pywebview
+google-generativeai
+pygetwindow

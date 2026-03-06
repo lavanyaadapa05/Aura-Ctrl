@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Aura-Ctrl</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="overlay"></div>
+
+<div class="container">
+
+    <!-- LOGO -->
+    <div class="logo">
+        <svg width="80" height="80" viewBox="0 0 100 100">
+            <defs>
+                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#6a5acd"/>
+                    <stop offset="100%" stop-color="#00e5ff"/>
+                </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="45" stroke="url(#grad)" stroke-width="6" fill="none"/>
+            <path d="M50 25 L65 60 L50 52 L35 60 Z" fill="url(#grad)"/>
+        </svg>
+    </div>
+
+    <!-- HEADING -->
+    <h1 class="title">
+        <span class="aura">Aura</span><span class="ctrl">Ctrl</span>
+    </h1>
+
+    <p class="tagline">Control your world with gestures</p>
+
+    <!-- BUTTONS -->
+    <div class="buttons">
+    <button onclick="pywebview.api.start_gesture()">Gesture Control</button>
+    <button onclick="pywebview.api.start_volume()">Voice Based Control</button>
+    <button onclick="pywebview.api.open_help()">Help</button>
+    </div>
+
+</div>
+
+</body>
+</html>
