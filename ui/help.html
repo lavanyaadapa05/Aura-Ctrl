@@ -1,251 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Aura-Ctrl Help</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Aura-Ctrl Help</title>
+<link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
 <div class="overlay"></div>
 
-<div class="help-container">
+<div class="container">
 
-    <h1 class="title">
-        <span class="aura">Aura</span><span class="ctrl">Ctrl</span> Help
-    </h1>
+<h1 class="title">
+<span class="aura">Aura</span><span class="ctrl">Ctrl</span> <span class="ctrl">Help</span>
+</h1>
 
-    <p class="help-intro">
-        Aura-Ctrl allows you to control your system using simple hand gestures and voice commands.
-        Please follow the instructions below for smooth operation.
-    </p>
+<p class="tagline">
+Choose a help topic to learn how to use Aura-Ctrl features.
+</p>
 
-    <!-- SECTION -->
-    <div class="help-section">
-        <h2>🤏 Gesture Control</h2>
-        <p>Aura-Ctrl allows you to control your computer using hand gestures. Click <b>Gesture Control</b> to start gesture control.</p>
+<div class="buttons">
 
-        <h3>How to Start Gesture Control</h3>
-        <ol>
-            <li>Open the Aura-Ctrl application.</li>
-            <li>Click on <b>Gesture Control</b> from the home screen.</li>
-            <li>Allow camera access when prompted.</li>
-            <li>Ensure your hand is clearly visible in front of the camera.</li>
-            <li>Keep your hand within good lighting conditions.</li>
-        </ol>
+<button onclick="pywebview.api.open_gesture_help()">
+Gesture Control Guide
+</button>
 
-        <h3>🖱 Cursor Movement</h3>
-        <ul>
-            <li>Raise your <b>index finger</b>.</li>
-            <li>Move your hand to move the mouse pointer.</li>
-            <li>Move smoothly for better accuracy.</li>
-        </ul>
+<button onclick="pywebview.api.open_voice_help()">
+Voice Control Guide
+</button>
 
-        <h3>👆 Left Click</h3>
-        <ul>
-            <li>Bring your <b>index finger</b> and <b>thumb</b> close together.</li>
-            <li>Hold briefly and release.</li>
-            <li>This performs a single left click.</li>
-        </ul>
-
-        <h3>🖐 Drag & Drop</h3>
-        <ul>
-            <li>Bring index finger and thumb very close.</li>
-            <li>Hold them together to start dragging.</li>
-            <li>Move your hand to drag.</li>
-            <li>Separate fingers to drop.</li>
-        </ul>
-
-        <h3>👉 Right Click</h3>
-        <ul>
-            <li>Bring your <b>thumb</b> and <b>pinky finger</b> close together.</li>
-            <li>This triggers a right click.</li>
-        </ul>
-
-        <h3>🔄 Scroll</h3>
-        <ul>
-            <li>Join your <b>index</b> and <b>middle fingers</b>.</li>
-            <li>Move your hand up to scroll up.</li>
-            <li>Move your hand down to scroll down.</li>
-            <li>Keep movements slow and steady.</li>
-        </ul>
-
-        <h3>🔊 Volume Control Mode</h3>
-        <ul>
-            <li>Make a <b>closed fist</b> (all fingers folded).</li>
-            <li>Move hand <b>up</b> to increase volume.</li>
-            <li>Move hand <b>down</b> to decrease volume.</li>
-        </ul>
-
-        <h3>💡 Brightness Control Mode</h3>
-        <ul>
-            <li>Keep your hand in <b>fist mode</b>.</li>
-            <li>Move hand <b>right</b> to increase brightness.</li>
-            <li>Move hand <b>left</b> to decrease brightness.</li>
-        </ul>
-
-        <h3>🌐 Application Launch</h3>
-        <ul>
-            <li>Show only <b>thumb up</b> to open Chrome.</li>
-            <li>Show <b>thumb, index, and pinky up</b> to open Notepad.</li>
-            <li>Show <b>all fingers up</b> to open Settings.</li>
-        </ul>
-
-        <h3>📱 System Controls</h3>
-        <ul>
-            <li>Show <b>thumb and pinky up</b> to toggle Bluetooth.</li>
-            <li>Show <b>thumb, index, and middle up</b> to take a screenshot.</li>
-            <li>Show <b>index, middle, ring, and pinky up</b> to switch to next window/tab.</li>
-        </ul>
-
-        <h3>🔍 Zoom Control</h3>
-        <ul>
-            <li>Show <b>index and middle fingers up</b>.</li>
-            <li>Bring fingers <b>closer together</b> to zoom in.</li>
-            <li>Move fingers <b>farther apart</b> to zoom out.</li>
-        </ul>
-
-        <h3>⚠ Tips for Best Performance</h3>
-        <ul>
-            <li>Use a plain background.</li>
-            <li>Keep camera steady.</li>
-            <li>Avoid multiple hands in frame.</li>
-            <li>Good lighting improves accuracy.</li>
-        </ul>
-    </div>
-
-    <!-- SECTION -->
-    <div class="help-section">
-        <h2>🎤 Voice Control</h2>
-        <p>Aura-Ctrl also supports voice commands for additional control. Click <b>Voice based Control</b> to start voice control.</p>
-
-        <h3>How to Start Voice Control</h3>
-        <ul>
-            <li>Open the Aura-Ctrl application.</li>
-            <li>Click on <b>Voice based Control</b> from the home screen.</li>
-            <li>Ensure your microphone is working and not muted.</li>
-            <li>Speak clearly when prompted.</li>
-        </ul>
-
-        <h3>🖥 Application Control</h3>
-        <ul>
-            <li>Say <b>"open [app name]"</b> to open an application (e.g., "open chrome", "open notepad", "open calculator").</li>
-            <li>Say <b>"close [app name]"</b> to close an application (e.g., "close chrome").</li>
-            <li>Say <b>"maximize [app name]"</b> to maximize an application window.</li>
-            <li>Say <b>"minimise [app name]"</b> to minimize an application window.</li>
-        </ul>
-
-        <h3>🪟 Window Management</h3>
-        <ul>
-            <li>Say <b>"arrange left right"</b> to arrange two windows side by side.</li>
-            <li>Say <b>"arrange top bottom"</b> to arrange two windows stacked vertically.</li>
-            <li>Say <b>"swap windows"</b> to swap the positions of two active windows.</li>
-        </ul>
-
-        <h3>🔊 Volume Control</h3>
-        <ul>
-            <li>Say <b>"volume up"</b> to increase volume.</li>
-            <li>Say <b>"volume down"</b> to decrease volume.</li>
-            <li>Say <b>"mute volume"</b> to mute/unmute volume.</li>
-        </ul>
-
-        <h3>💡 Brightness Control</h3>
-        <ul>
-            <li>Say <b>"brightness up"</b> to increase screen brightness.</li>
-            <li>Say <b>"brightness down"</b> to decrease screen brightness.</li>
-            <li>Say <b>"set brightness to [level]"</b> to set brightness to a specific level (0-100).</li>
-        </ul>
-
-        <h3>🖱 Mouse Control</h3>
-        <ul>
-            <li>Say <b>"mouse left"</b> to move mouse left.</li>
-            <li>Say <b>"mouse right"</b> to move mouse right.</li>
-            <li>Say <b>"mouse up"</b> to move mouse up.</li>
-            <li>Say <b>"mouse down"</b> to move mouse down.</li>
-            <li>Say <b>"click"</b> to perform a left click.</li>
-            <li>Say <b>"double click"</b> to perform a double click.</li>
-        </ul>
-
-        <h3>📜 Scrolling</h3>
-        <ul>
-            <li>Say <b>"scroll up"</b> to scroll up.</li>
-            <li>Say <b>"scroll down"</b> to scroll down.</li>
-        </ul>
-
-        <h3>📸 Screenshot</h3>
-        <ul>
-            <li>Say <b>"take screenshot"</b> to capture and save a screenshot.</li>
-        </ul>
-
-        <h3>📶 WiFi Control</h3>
-        <ul>
-            <li>Say <b>"wifi on"</b> to turn WiFi on.</li>
-            <li>Say <b>"wi-fi off"</b> to turn WiFi off.</li>
-        </ul>
-
-        <h3>🛑 Stopping Voice Control</h3>
-        <ul>
-            <li>Say <b>"exit"</b> or <b>"stop"</b> to stop voice control.</li>
-        </ul>
-    </div>
-
-    <!-- SECTION -->
-    <div class="help-section">
-        <h2>📊 PowerPoint Control</h2>
-        <p>Aura-Ctrl supports voice commands for controlling PowerPoint presentations.</p>
-
-        <h3>📂 Presentation Management</h3>
-        <ul>
-            <li>Say <b>"open powerpoint"</b> to connect to PowerPoint.</li>
-            <li>Say <b>"create new presentation"</b> to create a new presentation.</li>
-            <li>Say <b>"create slide about [topic]"</b> to add a new slide with the specified topic.</li>
-        </ul>
-
-        <h3>🎬 Presentation Control</h3>
-        <ul>
-            <li>Say <b>"start presentation"</b> to begin the slideshow.</li>
-            <li>Say <b>"next slide"</b> to go to the next slide.</li>
-            <li>Say <b>"previous slide"</b> to go to the previous slide.</li>
-            <li>Say <b>"stop presentation"</b> to end the slideshow.</li>
-        </ul>
-    </div>
-
-    <!-- SECTION -->
-    <div class="help-section">
-        <h2>💻 VS Code Coding</h2>
-        <p>Aura-Ctrl supports voice-controlled coding in VS Code. Open VS Code and use these commands to create, edit, and run Python programs.</p>
-
-        <h3>🖥 Opening VS Code</h3>
-        <ul>
-            <li>Say <b>"open vs code"</b> to launch Visual Studio Code.</li>
-        </ul>
-
-        <h3>📄 File Management</h3>
-        <ul>
-            <li>Say <b>"open new file"</b> to create a new file.</li>
-            <li>Say <b>"title as [filename]"</b> to name the file (e.g., "title as one.py").</li>
-            <li>Say <b>"save"</b> to save the current file.</li>
-            <li>Say <b>"close"</b> to close the current file.</li>
-        </ul>
-
-        <h3>🤖 AI Code Generation</h3>
-        <ul>
-            <li>Say <b>"write a program to [description]"</b> to generate Python code using AI (e.g., "write a program to see whether a number is odd or even").</li>
-        </ul>
-
-        <h3>▶ Running Code</h3>
-        <ul>
-            <li>Say <b>"run with test case [input]"</b> to execute the program with a test input (e.g., "run with test case 2").</li>
-            <li>The code runs in VS Code's integrated terminal.</li>
-        </ul>
-
-        <h3>⚠ Notes</h3>
-        <ul>
-            <li>Ensure VS Code is the active window when using file commands.</li>
-            <li>Currently supports Python programming.</li>
-            <li>AI code generation requires an internet connection.</li>
-        </ul>
-    </div>
+<button onclick="pywebview.api.close_window()">⬅ Back</button>
+</div>
 
 </div>
 
