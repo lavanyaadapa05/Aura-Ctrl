@@ -47,12 +47,12 @@ body {
 
 .aura {
     color: #00e5ff;
-    text-shadow: 0 0 15px #00e5ff;
+    text-shadow: 0 0 15px #1d1f20;
 }
 
 .ctrl {
     color: #00e5ff;
-    text-shadow: 0 0 15px #00e5ff;
+    text-shadow: 0 0 15px #1d1f20;
 }
 
 .tagline {
@@ -108,7 +108,7 @@ body {
 .help-section h2 {
     color: #00e5ff;
     margin-bottom: 10px;
-    text-shadow: 0 0 10px #00e5ff;
+    text-shadow: 0 0 10px #0e0e0e;
 }
 
 .help-section ul,
