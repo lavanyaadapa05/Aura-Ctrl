@@ -23,7 +23,6 @@ ppt = PPTController()
 current_file = None
 
 
-
 # ===================== WIFI CONTROL (REAL TOGGLE) =====================
 
 def wifi_off():
@@ -351,6 +350,7 @@ def speak_status(text):
     engine.stop()
 
 def listen_command():
+
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
         speak_status("Listening...")
@@ -489,7 +489,7 @@ def execute_command(command):
         take_screenshot()
 
     elif "exit" in command or "stop" in command:
-        speak_status("Exiting program...")
+        speak_status("Exiting voice mode...")
         return False
 
     return True
@@ -506,7 +506,7 @@ def main():
 
     running = True
     while running:
-        print("listenn START")
+        #print("listening AGAIN")
         command = listen_command()
         if command:
             running = execute_command(command)
