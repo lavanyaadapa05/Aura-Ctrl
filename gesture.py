@@ -85,7 +85,12 @@ def fingers_up(hand_landmarks):
     # Pinky
     fingers.append(1 if hand_landmarks.landmark[m_hands.HandLandmark.PINKY_TIP].y < hand_landmarks.landmark[m_hands.HandLandmark.PINKY_PIP].y else 0)
     return fingers
+# ---------------- EXIT GESTURE CONTROL ----------------
 
+def stop_gesture():
+    global stop_gesture_flag
+    stop_gesture_flag = True
+    print("[LOG] Gesture control stopped")
 # -------------------- Main Program --------------------
 def run():
     global prev_screen_x, prev_screen_y, prev_hand_center_x, prev_hand_center_y, click, dragging, two_fingers_joined_frames, last_scroll_time, stop_gesture_flag
@@ -244,7 +249,7 @@ def run():
 
                         if time.time() - last_action_time > ACTION_COOLDOWN:
 
-                            if fingers == [1,0,0,0,0]:
+                            if fingers == [1,0,0,0,1]:
                                 os.system("start chrome")
                                 gesture_text += "Open Chrome"
                                 last_action_time=time.time()
@@ -262,15 +267,7 @@ def run():
                                 last_action_time=time.time()
                                 print("settings")
 
-                            elif fingers == [1,0,0,0,1]:
-                                pyautogui.hotkey("win","a")   # open quick settings
-                                time.sleep(1)
-                                pyautogui.press("b")          # toggle bluetooth
-                                gesture_text += "Bluetooth Toggle"
-                                last_action_time=time.time()
-                                print("Bluetooth toggled")
-
-                            elif fingers == [1,1,1,0,0]:
+                            elif fingers == [1,0,0,1,1]:
                                 screenshot = pyautogui.screenshot()
                                 screenshot.save("screenshot.png")
                                 gesture_text += "Screenshot Taken "
@@ -284,6 +281,10 @@ def run():
                                 gesture_text += "Next Tab"
                                 last_action_time=time.time()
                                 print("Next tab")
+                            elif fingers == [0,1,1,1,0]:   # Exit gesture
+                                gesture_text += "Exit Gesture Mode"
+                                print("[LOG] Exiting gesture control")
+                                stop_gesture()
 
                             elif fingers == [0,1,1,0,0]:
 
