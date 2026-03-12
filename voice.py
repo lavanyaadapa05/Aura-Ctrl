@@ -43,7 +43,7 @@ ppt = PPTController()
 current_file = None
 
 # Configure Gemini AI for code generation
-genai.configure(api_key="AIzaSyCZCNXC0CqGa87uDLPP0w8xUYYD_FJlRfY")
+genai.configure(api_key="YOUR KEEY")
 model = genai.GenerativeModel("gemini-2.5-flash-lite")
 
 
