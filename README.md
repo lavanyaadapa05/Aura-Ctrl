@@ -84,8 +84,8 @@ python -c "import cv2, mediapipe, pyautogui, speech_recognition, pyttsx3; print(
 
 ### Gesture Control
 - **Cursor Movement**: Raise your index finger and move your hand
-- **Left Click**: Bring index finger and thumb close together
-- **Right Click**: Bring thumb and pinky finger close together
+- **Left Click**: Raise index finger and pinky finger together
+- **Right Click**: Raise thumb and pinky finger  together
 - **Scroll**: Join index and middle fingers, move hand up/down
 - **Volume Control**: Make a fist, move hand up/down
 - **Brightness Control**: Make a fist, move hand left/right
