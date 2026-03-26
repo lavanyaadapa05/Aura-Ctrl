@@ -1,316 +1,246 @@
-# ------------------- Virtual Mouse with Volume & Brightness Control -------------------
-# Install required packages: opencv, mediapipe, pyautogui, pywin32, pycaw, screen_brightness_control
-
 import cv2
 import mediapipe as mp
 import numpy as np
-# landmark_pb2 is a protocolbuffer file used by mediapipe to store and represent landmark data like handpoints, face mesh points or body poses.
 import time
-from math import sqrt                                                                                 
-import win32api
+from math import sqrt
 import pyautogui
-# win32api: allows interaction with Windows API for mouse/keyboard
-# pyautogui: cross-platform automation of mouse/keyboard
+import win32api
+import os
 
-# For volume control
 from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
-from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
-
-# For brightness control
-import screen_brightness_control as sbc
-
-import os  # for opening files
-print(mp.solutions)
-# -------------------- MediaPipe Hands Setup --------------------
-m_drawing = mp.solutions.drawing_utils
-m_hands = mp.solutions.hands
-
-# -------------------- Variables --------------------
-click = 0
-dragging = False
-prev_screen_x, prev_screen_y = 0, 0
-smoothening = 7
-stop_gesture_flag = False
-screen_w, screen_h = pyautogui.size()
-
-prev_hand_center_x = None
-prev_hand_center_y = None
-
-# Scroll variables
-two_fingers_joined_frames = 0
-JOINED_FRAMES_REQUIRED = 3
-last_scroll_time = 0
-SCROLL_COOLDOWN = 0.12
-MIN_DY_FOR_SCROLL = 12
-SCROLL_SCALE = 3
-MAX_SCROLL_PER_ACTION = 250
-FINGERS_JOINED_DIST_PX = 40
-
-# Cooldown for app actions
-last_action_time = 0
-ACTION_COOLDOWN = 2
-
-# -------------------- Pycaw Setup for Volume --------------------
+from pycaw.pycaw import IAudioEndpointVolume
 from comtypes.client import CreateObject
 from pycaw.constants import CLSID_MMDeviceEnumerator
 from pycaw.pycaw import IMMDeviceEnumerator
+import screen_brightness_control as sbc
 
+# 🔴 ADD THIS (GLOBAL STOP FLAG)
+stop_flag = False
+
+# ---------------- Setup ----------------
+mp_hands = mp.solutions.hands
+mp_draw = mp.solutions.drawing_utils
+
+screen_w, screen_h = pyautogui.size()
+
+# Volume setup
 enumerator = CreateObject(CLSID_MMDeviceEnumerator, interface=IMMDeviceEnumerator)
-device = enumerator.GetDefaultAudioEndpoint(0, 1)  # 0=eRender, 1=Console
+device = enumerator.GetDefaultAudioEndpoint(0, 1)
 volume = device.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
 volume = cast(volume, POINTER(IAudioEndpointVolume))
 
-def set_volume(level):
-    volume.SetMasterVolumeLevelScalar(level, None)
+def set_volume(v): volume.SetMasterVolumeLevelScalar(v, None)
+def get_volume(): return volume.GetMasterVolumeLevelScalar()
+def set_brightness(b): sbc.set_brightness(int(b))
 
-def get_volume():
-    return volume.GetMasterVolumeLevelScalar()
-
-def set_brightness(level):
-    sbc.set_brightness(level)
-
-# -------------------- Helper Function --------------------
-def fingers_up(hand_landmarks):
-    """Returns list indicating which fingers are up (1) or down (0)"""
+# ---------------- Finger Detection ----------------
+def fingers_up(hand):
     fingers = []
-    # Thumb
-    fingers.append(1 if hand_landmarks.landmark[m_hands.HandLandmark.THUMB_TIP].x < hand_landmarks.landmark[m_hands.HandLandmark.THUMB_IP].x else 0)
-    # Index
-    fingers.append(1 if hand_landmarks.landmark[m_hands.HandLandmark.INDEX_FINGER_TIP].y < hand_landmarks.landmark[m_hands.HandLandmark.INDEX_FINGER_PIP].y else 0)
-    # Middle
-    fingers.append(1 if hand_landmarks.landmark[m_hands.HandLandmark.MIDDLE_FINGER_TIP].y < hand_landmarks.landmark[m_hands.HandLandmark.MIDDLE_FINGER_PIP].y else 0)
-    # Ring
-    fingers.append(1 if hand_landmarks.landmark[m_hands.HandLandmark.RING_FINGER_TIP].y < hand_landmarks.landmark[m_hands.HandLandmark.RING_FINGER_PIP].y else 0)
-    # Pinky
-    fingers.append(1 if hand_landmarks.landmark[m_hands.HandLandmark.PINKY_TIP].y < hand_landmarks.landmark[m_hands.HandLandmark.PINKY_PIP].y else 0)
+    fingers.append(1 if hand.landmark[4].x < hand.landmark[3].x else 0)
+    fingers.append(1 if hand.landmark[8].y < hand.landmark[6].y else 0)
+    fingers.append(1 if hand.landmark[12].y < hand.landmark[10].y else 0)
+    fingers.append(1 if hand.landmark[16].y < hand.landmark[14].y else 0)
+    fingers.append(1 if hand.landmark[20].y < hand.landmark[18].y else 0)
     return fingers
-# ---------------- EXIT GESTURE CONTROL ----------------
 
-def stop_gesture():
-    global stop_gesture_flag
-    stop_gesture_flag = True
-    print("[LOG] Gesture control stopped")
-# -------------------- Main Program --------------------
+# ---------------- Main ----------------
 def run():
-    global prev_screen_x, prev_screen_y, prev_hand_center_x, prev_hand_center_y, click, dragging, two_fingers_joined_frames, last_scroll_time, stop_gesture_flag
-    # Reset variables for new session
-    prev_screen_x, prev_screen_y = 0, 0
-    prev_hand_center_x = None
-    prev_hand_center_y = None
-    click = 0
-    dragging = False
-    last_action_time = 0
-    ACTION_COOLDOWN = 2
-    two_fingers_joined_frames = 0
+    global stop_flag
+    stop_flag = False   # 🔥 reset when starting
+
+    cap = cv2.VideoCapture(0)
+
+    prev_x, prev_y = 0, 0
+    smooth = 7
+
+    prev_vol_y = None
+    prev_bright_x = None
+    prev_scroll_y = None
+
+    last_action = 0
     last_scroll_time = 0
-    video = cv2.VideoCapture(0)
-# -------------------- Main Loop --------------------
-    with m_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.8) as hands:
-        while not stop_gesture_flag and video.isOpened():
-            ret, frame = video.read()
+
+    gesture_count = 0
+    prev_gesture = None
+
+    with mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.8) as hands:
+        while not stop_flag:   # 🔥 FIXED LOOP
+            ret, frame = cap.read()
             if not ret:
                 continue
 
-            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            image = cv2.flip(image, 1)
-            imgheight, imgwidth, _ = image.shape
+            frame = cv2.flip(frame, 1)
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            result = hands.process(rgb)
 
-            results = hands.process(image)
-            gesture_text = ""  # display gesture info
+            gesture_text = ""
+            scroll_active = False
 
-            if results.multi_hand_landmarks:
-                for hand_landmarks in results.multi_hand_landmarks:
-                    m_drawing.draw_landmarks(
-                        image, hand_landmarks, m_hands.HAND_CONNECTIONS,
-                        m_drawing.DrawingSpec(color=(250, 0, 0), thickness=2, circle_radius=4),
-                    )
+            if result.multi_hand_landmarks:
+                for hand in result.multi_hand_landmarks:
+                    mp_draw.draw_landmarks(frame, hand, mp_hands.HAND_CONNECTIONS)
 
-                    # -------------------- Get Hand Points --------------------
-                    index_x = int(hand_landmarks.landmark[m_hands.HandLandmark.INDEX_FINGER_TIP].x * imgwidth)
-                    index_y = int(hand_landmarks.landmark[m_hands.HandLandmark.INDEX_FINGER_TIP].y * imgheight)
+                    h, w, _ = frame.shape
 
-                    thumb_x = int(hand_landmarks.landmark[m_hands.HandLandmark.THUMB_TIP].x * imgwidth)
-                    thumb_y = int(hand_landmarks.landmark[m_hands.HandLandmark.THUMB_TIP].y * imgheight)
+                    x = int(hand.landmark[8].x * w)
+                    y = int(hand.landmark[8].y * h)
 
-                    pinky_x = int(hand_landmarks.landmark[m_hands.HandLandmark.PINKY_TIP].x * imgwidth)
-                    pinky_y = int(hand_landmarks.landmark[m_hands.HandLandmark.PINKY_TIP].y * imgheight)
+                    mx = int(hand.landmark[12].x * w)
+                    my = int(hand.landmark[12].y * h)
 
-                    # Always compute wrist (hand center) so scrolling logic in cursor mode has a reference
-                    hand_center_x = int(hand_landmarks.landmark[m_hands.HandLandmark.WRIST].x * imgwidth)
-                    hand_center_y = int(hand_landmarks.landmark[m_hands.HandLandmark.WRIST].y * imgheight)
+                    wrist_y = int(hand.landmark[0].y * h)
 
-                    # -------------------- Detect Mode --------------------
-                    fingers = fingers_up(hand_landmarks)
-                    if fingers == [0,0,0,0,0]:  # FIST -> Volume/Brightness mode
-                        # -------------------- VOLUME CONTROL --------------------
-                        if prev_hand_center_y is not None:
-                            dy = prev_hand_center_y - hand_center_y  # move up = increase
-                            vol_level = np.interp(dy, [-1200, 1200], [0.0, 1.0]) # larger hand movement range = smaller volume change
-                            set_volume(max(0, min(vol_level, 1)))
-                            gesture_text += f"Volume: {int(get_volume()*100)}% "
-                            print(f"[LOG] Volume set to {int(get_volume()*100)}%")
+                    fingers = fingers_up(hand)
 
-                        # -------------------- BRIGHTNESS CONTROL --------------------
-                        if prev_hand_center_x is not None:
-                            dx = hand_center_x - prev_hand_center_x  # move right = increase
-                            bright_level = np.interp(dx, [-1200, 1200], [0, 100])  # larger hand movement range = smaller brightness change
-                            set_brightness(max(0, min(int(bright_level), 100)))
-                            gesture_text += f"Brightness: {int(bright_level)}% "
-                            print(f"[LOG] Brightness set to {int(bright_level)}%")
-
-                        prev_hand_center_y = hand_center_y
-                        prev_hand_center_x = hand_center_x
-
+                    # -------- Stability --------
+                    if fingers == prev_gesture:
+                        gesture_count += 1
                     else:
+                        gesture_count = 0
+                    prev_gesture = fingers
 
-                        # -------------------- Move Cursor --------------------
-                        
-                        screen_x = np.interp(index_x, [0, imgwidth], [0, screen_w])
-                        screen_y = np.interp(index_y, [0, imgheight], [0, screen_h])
+                    if gesture_count < 5:
+                        continue
 
-                        cur_screen_x = prev_screen_x + (screen_x - prev_screen_x) / smoothening
-                        cur_screen_y = prev_screen_y + (screen_y - prev_screen_y) / smoothening
-                        win32api.SetCursorPos((int(cur_screen_x), int(cur_screen_y)))
-                        prev_screen_x, prev_screen_y = cur_screen_x, cur_screen_y
-                         # -------------------- LEFT CLICK --------------------
-                        distance = sqrt((index_x - thumb_x) ** 2 + (index_y - thumb_y) ** 2)
-                        if distance < 40:
-                            click += 1
-                            gesture_text += "Left Click "
-                            if click % 5 == 0:
-                                pyautogui.click()
-                                print("[LOG] Left Click")
+                    # ---------------- CONTROL MODE ----------------
+                    if fingers == [0,0,0,0,0]:
+                        gesture_text = "Control Mode"
+
+                        if prev_vol_y is not None:
+                            dy = prev_vol_y - wrist_y
+                            set_volume(np.clip(get_volume() + dy/300, 0, 1))
+
+                        if prev_bright_x is not None:
+                            dx = x - prev_bright_x
+                            set_brightness(np.clip(sbc.get_brightness()[0] + dx/5, 0, 100))
+
+                        prev_vol_y = wrist_y
+                        prev_bright_x = x
+                        continue
+
+                    prev_vol_y = None
+                    prev_bright_x = None
+
+                    # ---------------- MOVE ----------------
+                    if fingers == [0,1,0,0,0]:
+                        sx = np.interp(x, [0,w], [0,screen_w])
+                        sy = np.interp(y, [0,h], [0,screen_h])
+
+                        cx = prev_x + (sx - prev_x)/smooth
+                        cy = prev_y + (sy - prev_y)/smooth
+
+                        win32api.SetCursorPos((int(cx), int(cy)))
+                        prev_x, prev_y = cx, cy
+                        gesture_text = "Move"
+
+                    # ---------------- SCROLL ----------------
+                    elif fingers == [0,1,1,0,0]:
+                        gesture_text = "Scroll"
+                        scroll_active = True
+
+                        if prev_scroll_y is None:
+                            prev_scroll_y = wrist_y
                         else:
-                            click = 0
+                            dy = prev_scroll_y - wrist_y
 
-                         # -------------------- DRAG & DROP --------------------
-                        if distance < 25 and not dragging:
-                            pyautogui.mouseDown()
-                            dragging = True
-                            gesture_text += "Dragging "
-                            print("[LOG] Dragging started")
-                        elif distance > 25 and dragging:
-                            pyautogui.mouseUp()
-                            dragging = False
-                            print("[LOG] Dragging ended")
+                            if abs(dy) > 5 and time.time() - last_scroll_time > 0.05:
+                                scroll_amount = int(dy * 5)
+                                pyautogui.scroll(scroll_amount)
+                                last_scroll_time = time.time()
 
-                        # -------------------- RIGHT CLICK --------------------
-                        right_distance = sqrt((thumb_x - pinky_x) ** 2 + (thumb_y - pinky_y) ** 2)
-                        if right_distance < 25:
+                            prev_scroll_y = wrist_y
+
+                    # ---------------- LEFT CLICK ----------------
+                    elif fingers == [0,1,0,0,1]:
+                        if time.time() - last_action > 1:
+                            pyautogui.click()
+                            gesture_text = "Left Click"
+                            last_action = time.time()
+
+                    # ---------------- RIGHT CLICK ----------------
+                    elif fingers == [1,0,0,0,1]:
+                        if time.time() - last_action > 1:
                             pyautogui.rightClick()
-                            gesture_text += "Right Click "
-                            print("[LOG] Right Click")
+                            gesture_text = "Right Click"
+                            last_action = time.time()
 
-                        # ---------------- SCROLL ----------------
-                      # -------------------- SCROLL --------------------
-                        # -------------------- SCROLL WITH 2 FINGERS JOINED (RELIABLE VERSION) --------------------
-                        # Compute fingertip coordinates using appropriate axes
-                        ix = hand_landmarks.landmark[m_hands.HandLandmark.INDEX_FINGER_TIP].x * imgwidth
-                        iy = hand_landmarks.landmark[m_hands.HandLandmark.INDEX_FINGER_TIP].y * imgheight
+                    # ---------------- ZOOM ----------------
+                    elif fingers == [0,1,1,1,0]:
+                        dist = sqrt((x-mx)**2 + (y-my)**2)
+                        if time.time() - last_action > 1:
+                            if dist > 80:
+                                pyautogui.hotkey("ctrl","+")
+                            elif dist < 30:
+                                pyautogui.hotkey("ctrl","-")
+                            gesture_text = "Zoom"
+                            last_action = time.time()
 
-                        mx = hand_landmarks.landmark[m_hands.HandLandmark.MIDDLE_FINGER_TIP].x * imgwidth
-                        my = hand_landmarks.landmark[m_hands.HandLandmark.MIDDLE_FINGER_TIP].y * imgheight
+                    # ---------------- CLOSE WINDOW ----------------
+                    elif fingers == [0,0,0,0,1]:
+                        if time.time() - last_action > 2:
+                            pyautogui.hotkey("alt","f4")
+                            gesture_text = "Close Window"
+                            last_action = time.time()
 
-                        two_fingers_distance = sqrt((ix - mx)**2 + (iy - my)**2)
+                    # ---------------- SCREENSHOT ----------------
+                    elif fingers == [1,1,1,0,0]:
+                        if time.time() - last_action > 2:
+                            pyautogui.screenshot().save(f"screenshot_{int(time.time())}.png")
+                            gesture_text = "Screenshot"
+                            last_action = time.time()
 
-                        # If index+middle are close, count this frame as "joined"
-                        if two_fingers_distance < FINGERS_JOINED_DIST_PX:
-                            two_fingers_joined_frames += 1
-                        else:
-                            two_fingers_joined_frames = 0
+                    # ---------------- CHROME ----------------
+                    elif fingers == [1,0,0,0,0]:
+                        if time.time() - last_action > 2:
+                            os.system("start chrome")
+                            gesture_text = "Chrome"
+                            last_action = time.time()
 
-                        # Only consider scrolling when fingers have been joined for required consecutive frames
-                        if two_fingers_joined_frames >= JOINED_FRAMES_REQUIRED:
-                            # use wrist vertical motion for scrolling
-                            if prev_hand_center_y is not None:
-                                dy_scroll = prev_hand_center_y - hand_center_y  # positive when hand moved up
-                                # require some minimum movement to avoid tiny jitter
-                                if abs(dy_scroll) >= MIN_DY_FOR_SCROLL:
-                                    now = time.time()
-                                    if now - last_scroll_time >= SCROLL_COOLDOWN:
-                                        # convert pixel delta to scroll units (tunable)
-                                        scroll_amount = int(np.sign(dy_scroll) * min(MAX_SCROLL_PER_ACTION, abs(dy_scroll) * SCROLL_SCALE))
-                                        # perform the scroll
-                                        pyautogui.scroll(scroll_amount)
-                                        last_scroll_time = now
-                                        if scroll_amount > 0:
-                                            gesture_text += "Scroll Up "
-                                            print(f"[LOG] Scroll Up (joined fingers) amt={scroll_amount}")
-                                        else:
-                                            gesture_text += "Scroll Down "
-                                            print(f"[LOG] Scroll Down (joined fingers) amt={scroll_amount}")
+                    # ---------------- NOTEPAD ----------------
+                    elif fingers == [1,1,0,0,1]:
+                        if time.time() - last_action > 2:
+                            os.system("notepad")
+                            gesture_text = "Notepad"
+                            last_action = time.time()
 
-                        # always update prev_hand_center_y for next frame
-                        prev_hand_center_y = hand_center_y
+                    # ---------------- SETTINGS ----------------
+                    elif fingers == [1,1,1,1,1]:
+                        if time.time() - last_action > 2:
+                            os.system("start ms-settings:")
+                            gesture_text = "Settings"
+                            last_action = time.time()
 
+                    # ---------------- ALT TAB ----------------
+                    elif fingers == [0,1,1,1,1]:
+                        if time.time() - last_action > 2:
+                            pyautogui.hotkey("alt","tab")
+                            gesture_text = "Alt Tab"
+                            last_action = time.time()
 
-                        # ---------------- NEW FEATURES ----------------
+            if not scroll_active:
+                prev_scroll_y = None
 
-                        if time.time() - last_action_time > ACTION_COOLDOWN:
+            cv2.putText(frame, gesture_text, (10,50),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
 
-                            if fingers == [1,0,0,0,1]:
-                                os.system("start chrome")
-                                gesture_text += "Open Chrome"
-                                last_action_time=time.time()
-                                print("chrome opened")
+            cv2.imshow("Virtual Mouse", frame)
 
-                            elif fingers == [1,1,0,0,1]:
-                                os.system("notepad")
-                                gesture_text += "Open Notepad"
-                                last_action_time=time.time()
-                                print("notepad opened")
+            key = cv2.waitKey(1) & 0xFF
 
-                            elif fingers == [1,1,1,1,1]:
-                                os.system("start ms-settings:")
-                                gesture_text += "Open Settings"
-                                last_action_time=time.time()
-                                print("settings")
-
-                            elif fingers == [1,0,0,1,1]:
-                                screenshot = pyautogui.screenshot()
-                                screenshot.save("screenshot.png")
-                                gesture_text += "Screenshot Taken "
-                                print("[LOG] Screenshot taken")
-                                time.sleep(1)
-                                filename = f"screenshot_{int(time.time())}.png"
-                                screenshot.save(filename)
-
-                            elif fingers == [0,1,1,1,1]:
-                                pyautogui.hotkey("alt","tab")
-                                gesture_text += "Next Tab"
-                                last_action_time=time.time()
-                                print("Next tab")
-                            elif fingers == [0,1,1,1,0]:   # Exit gesture
-                                gesture_text += "Exit Gesture Mode"
-                                print("[LOG] Exiting gesture control")
-                                stop_gesture()
-
-                            elif fingers == [0,1,1,0,0]:
-
-                                if two_fingers_distance > 80:
-                                    pyautogui.hotkey("ctrl","+")
-                                    gesture_text += "Zoom In"
-                                    last_action_time=time.time()
-                                    print("zoom in")
-
-                                elif two_fingers_distance < 40:
-                                    pyautogui.hotkey("ctrl","-")
-                                    gesture_text += "Zoom Out"
-                                    last_action_time=time.time()
-                                    print("zoom")
-
-            if gesture_text != "":
-                cv2.putText(image,gesture_text,(10,50),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            1,(0,255,0),2)
-
-            image = cv2.cvtColor(image,cv2.COLOR_RGB2BGR)
-
-            cv2.imshow("Virtual Mouse",image)
-
-            if cv2.waitKey(1) & 0xFF == ord('x'):
+            if key == ord('x') or key == 27:
                 break
 
-    video.release()
+            # 🔥 STOP FROM UI
+            if stop_flag:
+                print("[INFO] Gesture stopped from UI")
+                break
+
+            if cv2.getWindowProperty("Virtual Mouse", cv2.WND_PROP_VISIBLE) < 1:
+                break
+
+    cap.release()
     cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    run()
