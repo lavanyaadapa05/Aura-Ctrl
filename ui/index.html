@@ -34,15 +34,116 @@
 
     <!-- BUTTONS -->
     <div class="buttons">
-    <button onclick="pywebview.api.start_gesture()">Gesture Control</button>
+
+        <button id="gestureBtn" onclick="toggleGesture()">Start Gesture Mode</button>
+<button id="voiceBtn" onclick="toggleVoice()">Start Voice Mode</button>
+<button id="bothBtn" onclick="toggleBoth()">Start Both Modes</button>
+<button onclick="pywebview.api.open_help()">Help</button>
+    <!-- <button onclick="pywebview.api.start_gesture()">Gesture Control</button>
     <button onclick="pywebview.api.start_volume()">Voice Based Control</button>
     <button onclick="pywebview.api.start_both()">Gesture and Voice Control</button>
-    <button onclick="pywebview.api.open_help()">Help</button> 
-     <!-- <button onclick="pywebview.api.open_gesture_help()">Gesture Help</button>
-    <button onclick="pywebview.api.open_voice_help()">Voice Help</button> -->
+      -->
+     
     </div>
 
 </div>
+<script>
+let gestureRunning = false;
+let voiceRunning = false;
+let bothRunning = false;
 
+function setStart(btn, text) {
+    btn.innerText = text;
+    btn.classList.remove("stop");
+    btn.classList.add("start");
+}
+
+function setStop(btn, text) {
+    btn.innerText = text;
+    btn.classList.remove("start");
+    btn.classList.add("stop");
+}
+
+function resetButtons() {
+    gestureRunning = false;
+    voiceRunning = false;
+    bothRunning = false;
+
+    setStart(document.getElementById("gestureBtn"), "Start Gesture Mode");
+    setStart(document.getElementById("voiceBtn"), "Start Voice Mode");
+    setStart(document.getElementById("bothBtn"), "Start Both Modes");
+}
+
+async function toggleGesture() {
+    const btn = document.getElementById("gestureBtn");
+
+    if (!gestureRunning) {
+        resetButtons();
+        resetColors();   // ✅ reset all colors
+
+        await window.pywebview.api.start_gesture();
+        gestureRunning = true;
+
+        btn.innerText = "Stop Gesture Mode";
+        btn.style.background = "red";   // ✅ make red
+    } else {
+        await window.pywebview.api.stop_gesture();
+        gestureRunning = false;
+
+        btn.innerText = "Start Gesture Mode";
+        btn.style.background = "linear-gradient(135deg, #6a5acd, #00e5ff)"; // back to default
+    }
+}
+
+async function toggleVoice() {
+    const btn = document.getElementById("voiceBtn");
+
+    if (!voiceRunning) {
+        resetButtons();
+        resetColors();   // 🔥 reset colors
+
+        await window.pywebview.api.start_voice();
+        voiceRunning = true;
+
+        btn.innerText = "Stop Voice Mode";
+        btn.style.background = "red";   // ✅ FIXED
+    } else {
+        await window.pywebview.api.stop_voice();
+        voiceRunning = false;
+
+        btn.innerText = "Start Voice Mode";
+        btn.style.background = "linear-gradient(135deg, #6a5acd, #00e5ff)";
+    }
+}
+
+async function toggleBoth() {
+    const btn = document.getElementById("bothBtn");
+
+    if (!bothRunning) {
+        resetButtons();
+        resetColors();   // ✅ reset all colors
+
+        await window.pywebview.api.start_both();
+        bothRunning = true;
+
+        btn.innerText = "Stop Both Modes";
+        btn.style.background = "red";   // ✅ make red
+    } else {
+        await window.pywebview.api.stop_both();
+        bothRunning = false;
+
+        btn.innerText = "Start Both Modes";
+        btn.style.background = "linear-gradient(135deg, #6a5acd, #00e5ff)";
+    }
+}   
+
+function resetColors() {
+    const defaultBg = "linear-gradient(135deg, #6a5acd, #00e5ff)";
+
+    document.getElementById("gestureBtn").style.background = defaultBg;
+    document.getElementById("voiceBtn").style.background = defaultBg;
+    document.getElementById("bothBtn").style.background = defaultBg;
+}
+</script>
 </body>
 </html>
