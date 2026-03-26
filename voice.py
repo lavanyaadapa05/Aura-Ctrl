@@ -32,7 +32,8 @@ from winsdk.windows.networking.networkoperators import NetworkOperatorTetheringM
 from ppt_controller import PPTController
 
 # ===================== GLOBAL SETTINGS =====================
-
+voice_running = False
+#stop_flag = False
 # Disable PyAutoGUI fail-safe (prevents corner-of-screen crash)
 pyautogui.FAILSAFE = False
 
@@ -60,29 +61,38 @@ def speak_status(text):
 
 
 def listen_command():
-    """
-    Listens from the microphone and returns the recognized command as a string.
-    Returns an empty string if recognition fails.
-    """
     recognizer = sr.Recognizer()
+
     with sr.Microphone() as source:
-        recognizer.adjust_for_ambient_noise(source, duration=0.5)
-        speak_status("Listening...")
-        audio = recognizer.listen(source)
-        print("listen step done")
+        recognizer.adjust_for_ambient_noise(source, duration=0.3)
 
-    try:
-        command = recognizer.recognize_google(audio)
-        command = command.lower()
-        speak_status(f"You said: {command}")
-        return command
-    except sr.UnknownValueError:
-        speak_status("Could not understand audio")
-        return ""
-    except sr.RequestError:
-        speak_status("Speech service error")
-        return ""
+        while not stop_flag:
+            try:
+                print("Listening chunk...")
 
+                audio = recognizer.listen(
+                    source,
+                    timeout=1,              # VERY SHORT
+                    phrase_time_limit=3     # SHORT PHRASE
+                )
+
+                command = recognizer.recognize_google(audio)
+                command = command.lower()
+                speak_status(f"You said: {command}")
+                return command
+
+            except sr.WaitTimeoutError:
+                # No speech → loop again → check stop_flag
+                continue
+
+            except sr.UnknownValueError:
+                return ""
+
+            except sr.RequestError:
+                speak_status("Speech service error")
+                return ""
+
+    return ""
 
 # ============================================================
 #                SECTION 2: SYSTEM INFORMATION
@@ -977,7 +987,7 @@ def execute_command(command):
             subprocess.Popen(["code", current_file])
 
     elif "execute code" in command:
-        print("started execu")
+        print("started execution")
         if not current_file:
             speak_status("No file to run")
             return True
@@ -1022,7 +1032,8 @@ def execute_command(command):
 # ============================================================
 
 def main():
-    global engine
+    global engine,stop_flag
+    stop_flag = False
 
     # Initialize text-to-speech engine with a female voice at moderate speed
     engine = pyttsx3.init()
@@ -1039,12 +1050,13 @@ def main():
 
     # Main voice command loop — keeps running until "exit" or "stop" is spoken
     running = True
-    while running:
+    while running and not stop_flag:
         print("listenn START")
         command = listen_command()
         if command:
             running = execute_command(command)
 
-
+    speak_status("Voice mode ending")
+time.sleep(1)   # allow voice to finish before thread dies
 if __name__ == "__main__":
     main()
