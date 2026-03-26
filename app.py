@@ -6,25 +6,42 @@ import pyautogui
 
 class API:
 
-    def start_gesture(self):
-        print("gesture")
-        threading.Thread(target=gesture.run).start()
+    def __init__(self):
+        self.gesture_running = False
+        self.voice_running = False
 
-    def start_volume(self):
-        print("volume")
-        threading.Thread(target=voice.main).start()
+    def start_gesture(self):
+        if not self.gesture_running:
+            self.gesture_running = True
+            threading.Thread(target=gesture.run).start()
+
+    def stop_gesture(self):
+        self.gesture_running = False
+        gesture.stop_flag = True   # you must add this in gesture.py
+
+    def start_voice(self):
+        if not self.voice_running:
+            self.voice_running = True
+            threading.Thread(target=voice.main).start()
+
+    def stop_voice(self):
+        self.voice_running = False
+        voice.stop_flag = True   # add in voice.py
 
     def start_both(self):
-        print("gesture + voice")
-        threading.Thread(target=gesture.run).start()
-        threading.Thread(target=voice.main).start()
+        self.start_gesture()
+        self.start_voice()
+
+    def stop_both(self):
+        self.stop_gesture()
+        self.stop_voice()
 
     def open_help(self):
         screen_w, screen_h = pyautogui.size()
         webview.create_window(
             "Help",
             "ui/help.html",
-            js_api=self,      # IMPORTANT
+            js_api=self,
             width=screen_w,
             height=screen_h
         )
@@ -34,7 +51,7 @@ class API:
         webview.create_window(
             "Gesture Help",
             "ui/help_gesture.html",
-            js_api=self,      # IMPORTANT
+            js_api=self,
             width=screen_w,
             height=screen_h
         )
@@ -44,7 +61,7 @@ class API:
         webview.create_window(
             "Voice Help",
             "ui/help_voice.html",
-            js_api=self,      # IMPORTANT
+            js_api=self,
             width=screen_w,
             height=screen_h
         )
@@ -63,7 +80,7 @@ if __name__ == "__main__":
     webview.create_window(
         "Aura-Ctrl",
         "ui/index.html",
-        js_api=api,        # API attached to main window
+        js_api=api,
         width=screen_w,
         height=screen_h
     )
