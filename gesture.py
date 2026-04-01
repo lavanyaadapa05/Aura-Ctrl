@@ -197,6 +197,13 @@ def run():
                             gesture_text = "Chrome"
                             last_action = time.time()
 
+                                # ---------------- CALCULATOR ----------------
+                    elif fingers == [0,0,0,1,1]:
+                        if time.time() - last_action > 2:
+                            os.system("start calc")
+                            gesture_text = "Calculator"
+                            last_action = time.time()
+
                     # ---------------- NOTEPAD ----------------
                     elif fingers == [1,1,0,0,1]:
                         if time.time() - last_action > 2:
