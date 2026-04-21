@@ -20,6 +20,8 @@ import winreg
 import ctypes
 import datetime
 import psutil
+from dotenv import load_dotenv
+
 
 import google.generativeai as genai
 import pygetwindow as gw
@@ -32,8 +34,7 @@ from winsdk.windows.networking.networkoperators import NetworkOperatorTetheringM
 from ppt_controller import PPTController
 
 # ===================== GLOBAL SETTINGS =====================
-voice_running = False
-#stop_flag = False
+
 # Disable PyAutoGUI fail-safe (prevents corner-of-screen crash)
 pyautogui.FAILSAFE = False
 
@@ -44,7 +45,14 @@ ppt = PPTController()
 current_file = None
 
 # Configure Gemini AI for code generation
-genai.configure(api_key="YOUR KEEY")
+# Load local environment variables from .env
+load_dotenv()
+
+gemini_api_key = os.getenv("GEMINI_API_KEY")
+if not gemini_api_key:
+    raise ValueError("GEMINI_API_KEY is not set. Add it to your .env file.")
+
+genai.configure(api_key=gemini_api_key)
 model = genai.GenerativeModel("gemini-2.5-flash-lite")
 
 
@@ -61,38 +69,29 @@ def speak_status(text):
 
 
 def listen_command():
+    """
+    Listens from the microphone and returns the recognized command as a string.
+    Returns an empty string if recognition fails.
+    """
     recognizer = sr.Recognizer()
-
     with sr.Microphone() as source:
-        recognizer.adjust_for_ambient_noise(source, duration=0.3)
+        recognizer.adjust_for_ambient_noise(source, duration=0.5)
+        speak_status("Listening...")
+        audio = recognizer.listen(source)
+        print("listen step done")
 
-        while not stop_flag:
-            try:
-                print("Listening chunk...")
+    try:
+        command = recognizer.recognize_google(audio)
+        command = command.lower()
+        speak_status(f"You said: {command}")
+        return command
+    except sr.UnknownValueError:
+        speak_status("Could not understand audio")
+        return ""
+    except sr.RequestError:
+        speak_status("Speech service error")
+        return ""
 
-                audio = recognizer.listen(
-                    source,
-                    timeout=1,              # VERY SHORT
-                    phrase_time_limit=3     # SHORT PHRASE
-                )
-
-                command = recognizer.recognize_google(audio)
-                command = command.lower()
-                speak_status(f"You said: {command}")
-                return command
-
-            except sr.WaitTimeoutError:
-                # No speech → loop again → check stop_flag
-                continue
-
-            except sr.UnknownValueError:
-                return ""
-
-            except sr.RequestError:
-                speak_status("Speech service error")
-                return ""
-
-    return ""
 
 # ============================================================
 #                SECTION 2: SYSTEM INFORMATION
@@ -187,7 +186,7 @@ def wifi_on():
     """Reconnects to the previously saved WiFi network."""
     try:
         os.system("netsh wlan connect")
-        speak_status("WiFi turned on")
+        speak_status("SudhaRani WiFi turned on")
     except Exception:
         speak_status("Unable to turn WiFi on")
 
@@ -880,7 +879,7 @@ def execute_command(command):
         speak_status("Scrolled down")
 
     # -------------------- Connectivity --------------------
-    elif "wifi on" in command:
+    elif "wifi on"  in command:
         wifi_on()
 
     elif "wi-fi off" in command:
@@ -987,7 +986,7 @@ def execute_command(command):
             subprocess.Popen(["code", current_file])
 
     elif "execute code" in command:
-        print("started execution")
+        print("started execu")
         if not current_file:
             speak_status("No file to run")
             return True
@@ -1032,8 +1031,7 @@ def execute_command(command):
 # ============================================================
 
 def main():
-    global engine,stop_flag
-    stop_flag = False
+    global engine
 
     # Initialize text-to-speech engine with a female voice at moderate speed
     engine = pyttsx3.init()
@@ -1050,13 +1048,12 @@ def main():
 
     # Main voice command loop — keeps running until "exit" or "stop" is spoken
     running = True
-    while running and not stop_flag:
+    while running:
         print("listenn START")
         command = listen_command()
         if command:
             running = execute_command(command)
 
-    speak_status("Voice mode ending")
-time.sleep(1)   # allow voice to finish before thread dies
+
 if __name__ == "__main__":
     main()
