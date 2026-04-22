@@ -1054,6 +1054,7 @@ def main():
         if command:
             running = execute_command(command)
 
-
+    speak_status("Voice mode ending")
+time.sleep(1)
 if __name__ == "__main__":
     main()
